@@ -160,7 +160,7 @@ public abstract class TaskProcessChunkMultiPhase extends TaskProcessChunkBase
             if ("commands.gamerule.query".equals(text.getKey()))
             {
                 Object[] args = text.getArgs();
-                this.shouldEnableFeedback = args.length == 1 && args[0].equals("true");
+                this.shouldEnableFeedback = args.length == 2 && args[1].equals("true");
                 this.phase = TaskPhase.WAIT_FOR_CHUNKS;
 
                 if (this.shouldEnableFeedback)
