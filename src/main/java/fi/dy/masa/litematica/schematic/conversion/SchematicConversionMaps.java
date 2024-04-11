@@ -13,11 +13,7 @@ import net.minecraft.block.Blocks;
 import net.minecraft.block.PillarBlock;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.datafixer.TypeReferences;
-import net.minecraft.nbt.NbtCompound;
-import net.minecraft.nbt.NbtHelper;
-import net.minecraft.nbt.NbtOps;
-import net.minecraft.nbt.NbtString;
-import net.minecraft.nbt.StringNbtReader;
+import net.minecraft.nbt.*;
 import net.minecraft.registry.Registries;
 import net.minecraft.registry.RegistryEntryLookup;
 import net.minecraft.util.math.Direction;
@@ -284,6 +280,42 @@ public class SchematicConversionMaps
 
         return MinecraftClient.getInstance().getDataFixer().update(TypeReferences.BLOCK_NAME, new Dynamic<>(NbtOps.INSTANCE, tagStr),
                         1139, LitematicaSchematic.MINECRAFT_DATA_VERSION).getValue().asString();
+    }
+
+    /**
+     * These are the Vanilla Data Fixer's for the 1.20.4 -> 1.20.5 changes, and will handle all the heavy lifting for us.
+     */
+    public static NbtCompound updateBlockStates(NbtCompound oldBlockState, int oldVersion)
+    {
+        NbtElement newBlockState;
+
+        newBlockState = MinecraftClient.getInstance().getDataFixer().update(TypeReferences.BLOCK_STATE, new Dynamic<>(NbtOps.INSTANCE, oldBlockState),
+                oldVersion, LitematicaSchematic.MINECRAFT_DATA_VERSION).getValue();
+
+        // Type 10
+        return (NbtCompound) newBlockState;
+    }
+
+    public static NbtCompound updateBlockEntity(NbtCompound oldBlockEntity, int oldVersion)
+    {
+        NbtElement newBlockEntity;
+
+        newBlockEntity = MinecraftClient.getInstance().getDataFixer().update(TypeReferences.BLOCK_ENTITY, new Dynamic<>(NbtOps.INSTANCE, oldBlockEntity),
+                oldVersion, LitematicaSchematic.MINECRAFT_DATA_VERSION).getValue();
+
+        // Type 10
+        return (NbtCompound) newBlockEntity;
+    }
+
+    public static NbtCompound updateEntity(NbtCompound oldEntity, int oldVersion)
+    {
+        NbtElement newEntity;
+
+        newEntity = MinecraftClient.getInstance().getDataFixer().update(TypeReferences.ENTITY, new Dynamic<>(NbtOps.INSTANCE, oldEntity),
+                oldVersion, LitematicaSchematic.MINECRAFT_DATA_VERSION).getValue();
+
+        // Type 10
+        return (NbtCompound) newEntity;
     }
 
     private static class ConversionData

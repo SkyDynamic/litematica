@@ -42,13 +42,14 @@ import fi.dy.masa.litematica.util.PositionUtils;
 
 public class SchematicaSchematic
 {
+    // TODO --> May need to add vanilla DataFixer's here also?
     public static final String FILE_EXTENSION = ".schematic";
 
     private final SchematicConverter converter;
     private final BlockState[] palette = new BlockState[65536];
     private LitematicaBlockStateContainer blocks;
-    private Map<BlockPos, NbtCompound> tiles = new HashMap<>();
-    private List<NbtCompound> entities = new ArrayList<>();
+    private final Map<BlockPos, NbtCompound> tiles = new HashMap<>();
+    private final List<NbtCompound> entities = new ArrayList<>();
     private Vec3i size = Vec3i.ZERO;
     private String fileName;
     private IdentityHashMap<BlockState, IStateFixer> postProcessingFilter;
@@ -143,7 +144,7 @@ public class SchematicaSchematic
 
                                 try
                                 {
-                                    te.readNbt(teNBT);
+                                    te.readNbt(teNBT, world.getRegistryManager());
                                 }
                                 catch (Exception e)
                                 {
@@ -276,7 +277,7 @@ public class SchematicaSchematic
 
                                         try
                                         {
-                                            te.readNbt(teNBT);
+                                            te.readNbt(teNBT, world.getRegistryManager());
                                         }
                                         catch (Exception e)
                                         {
@@ -373,7 +374,7 @@ public class SchematicaSchematic
                     {
                         try
                         {
-                            NbtCompound nbt = te.createNbtWithId();
+                            NbtCompound nbt = te.createNbtWithId(world.getRegistryManager());
                             BlockPos pos = new BlockPos(relX, relY, relZ);
                             NBTUtils.writeBlockPosToTag(pos, nbt);
 

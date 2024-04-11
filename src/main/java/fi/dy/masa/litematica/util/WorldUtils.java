@@ -76,6 +76,7 @@ import fi.dy.masa.malilib.util.IntBoundingBox;
 import fi.dy.masa.malilib.util.LayerRange;
 import fi.dy.masa.malilib.util.MessageOutputType;
 import fi.dy.masa.malilib.util.StringUtils;
+import fi.dy.masa.malilib.util.ChunkUtils;
 
 public class WorldUtils
 {
@@ -84,12 +85,12 @@ public class WorldUtils
 
     public static boolean shouldPreventBlockUpdates(World world)
     {
-        return ((IWorldUpdateSuppressor) world).litematica_getShouldPreventBlockUpdates();
+        return ((IWorldUpdateSuppressor) world).litematica$getShouldPreventBlockUpdates();
     }
 
     public static void setShouldPreventBlockUpdates(World world, boolean preventUpdates)
     {
-        ((IWorldUpdateSuppressor) world).litematica_setShouldPreventBlockUpdates(preventUpdates);
+        ((IWorldUpdateSuppressor) world).litematica$setShouldPreventBlockUpdates(preventUpdates);
     }
 
     public static boolean convertSchematicaSchematicToLitematicaSchematic(
@@ -381,7 +382,7 @@ public class WorldUtils
             if (beSchem instanceof SignBlockEntity)
             {
                 IMixinSignBlockEntity beMixinSchem = (IMixinSignBlockEntity) beSchem;
-                SignText textSchematic = front ? beMixinSchem.litematica_getFrontText() : beMixinSchem.litematica_getBackText();
+                SignText textSchematic = front ? beMixinSchem.litematica$getFrontText() : beMixinSchem.litematica$getBackText();
 
                 if (textSchematic != null)
                 {
@@ -965,7 +966,7 @@ public class WorldUtils
                     Chunk chunk = world.getChunk(cx, z >> 4);
                     int xMin = Math.max(x1,  cx << 4      );
                     int xMax = Math.min(x2, (cx << 4) + 15);
-                    int yMax = Math.min(y2, chunk.getHighestNonEmptySectionYOffset() + 15);
+                    int yMax = Math.min(y2, ChunkUtils.getHighestSectionYOffset(chunk) + 15);
 
                     for (int x = xMin; x <= xMax; ++x)
                     {
@@ -1000,7 +1001,7 @@ public class WorldUtils
                     {
                         Chunk chunk = world.getChunk(cx, cz);
 
-                        if (y > chunk.getHighestNonEmptySectionYOffset() + 15)
+                        if (y > ChunkUtils.getHighestSectionYOffset(chunk) + 15)
                         {
                             continue;
                         }
@@ -1041,7 +1042,7 @@ public class WorldUtils
                     Chunk chunk = world.getChunk(x >> 4, cz);
                     int zMin = Math.max(z1,  cz << 4      );
                     int zMax = Math.min(z2, (cz << 4) + 15);
-                    int yMax = Math.min(y2, chunk.getHighestNonEmptySectionYOffset() + 15);
+                    int yMax = Math.min(y2, ChunkUtils.getHighestSectionYOffset(chunk) + 15);
 
                     for (int z = zMin; z <= zMax; ++z)
                     {

@@ -22,6 +22,7 @@ import net.minecraft.world.BlockRenderView;
 import fi.dy.masa.malilib.util.PositionUtils;
 import fi.dy.masa.litematica.config.Configs;
 import fi.dy.masa.litematica.data.DataManager;
+import org.joml.Matrix4f;
 
 public class BlockModelRendererSchematic
 {
@@ -34,24 +35,24 @@ public class BlockModelRendererSchematic
     }
 
     public boolean renderModel(BlockRenderView worldIn, BakedModel modelIn, BlockState stateIn,
-                               BlockPos posIn, MatrixStack matrices,
+                               BlockPos posIn, Matrix4f matrix4f,
                                VertexConsumer vertexConsumer, long rand)
     {
         boolean ao = MinecraftClient.isAmbientOcclusionEnabled() && stateIn.getLuminance() == 0 && modelIn.useAmbientOcclusion();
 
         Vec3d offset = stateIn.getModelOffset(worldIn, posIn);
-        matrices.translate(offset.x, offset.y, offset.z);
+        matrix4f.translate((float) offset.x, (float) offset.y, (float) offset.z);
         int overlay = OverlayTexture.DEFAULT_UV;
 
         try
         {
             if (ao)
             {
-                return this.renderModelSmooth(worldIn, modelIn, stateIn, posIn, matrices, vertexConsumer, this.random, rand, overlay);
+                return this.renderModelSmooth(worldIn, modelIn, stateIn, posIn, matrix4f, vertexConsumer, this.random, rand, overlay);
             }
             else
             {
-                return this.renderModelFlat(worldIn, modelIn, stateIn, posIn, matrices, vertexConsumer, this.random, rand, overlay);
+                return this.renderModelFlat(worldIn, modelIn, stateIn, posIn, matrix4f, vertexConsumer, this.random, rand, overlay);
             }
         }
         catch (Throwable throwable)
@@ -67,7 +68,7 @@ public class BlockModelRendererSchematic
         }
     }
 
-    public boolean renderModelSmooth(BlockRenderView worldIn, BakedModel modelIn, BlockState stateIn, BlockPos posIn, MatrixStack matrices,
+    public boolean renderModelSmooth(BlockRenderView worldIn, BakedModel modelIn, BlockState stateIn, BlockPos posIn, Matrix4f matrix4f,
                                      VertexConsumer vertexConsumer, BaseRandom random, long seedIn, int overlay)
     {
         boolean renderedSomething = false;
@@ -84,7 +85,7 @@ public class BlockModelRendererSchematic
             {
                 if (this.shouldRenderModelSide(worldIn, stateIn, posIn, side))
                 {
-                    this.renderQuadsSmooth(worldIn, stateIn, posIn, matrices, vertexConsumer, quads, quadBounds, bitset, aoFace, overlay);
+                    this.renderQuadsSmooth(worldIn, stateIn, posIn, matrix4f, vertexConsumer, quads, quadBounds, bitset, aoFace, overlay);
                     renderedSomething = true;
                 }
             }
@@ -95,7 +96,7 @@ public class BlockModelRendererSchematic
 
         if (quads.isEmpty() == false)
         {
-            this.renderQuadsSmooth(worldIn, stateIn, posIn, matrices, vertexConsumer, quads, quadBounds, bitset, aoFace, overlay);
+            this.renderQuadsSmooth(worldIn, stateIn, posIn, matrix4f, vertexConsumer, quads, quadBounds, bitset, aoFace, overlay);
             renderedSomething = true;
         }
 
@@ -103,7 +104,7 @@ public class BlockModelRendererSchematic
     }
 
     public boolean renderModelFlat(BlockRenderView worldIn, BakedModel modelIn, BlockState stateIn,
-                                   BlockPos posIn, MatrixStack matrices,
+                                   BlockPos posIn, Matrix4f matrix4f,
                                    VertexConsumer vertexConsumer, BaseRandom random, long seedIn, int overlay)
     {
         boolean renderedSomething = false;
@@ -119,7 +120,7 @@ public class BlockModelRendererSchematic
                 if (this.shouldRenderModelSide(worldIn, stateIn, posIn, side))
                 {
                     int light = WorldRenderer.getLightmapCoordinates(worldIn, stateIn, posIn.offset(side));
-                    this.renderQuadsFlat(worldIn, stateIn, posIn, light, overlay, false, matrices, vertexConsumer, quads, bitset);
+                    this.renderQuadsFlat(worldIn, stateIn, posIn, light, overlay, false, matrix4f, vertexConsumer, quads, bitset);
                     renderedSomething = true;
                 }
             }
@@ -130,7 +131,7 @@ public class BlockModelRendererSchematic
 
         if (quads.isEmpty() == false)
         {
-            this.renderQuadsFlat(worldIn, stateIn, posIn, -1, overlay, true, matrices, vertexConsumer, quads, bitset);
+            this.renderQuadsFlat(worldIn, stateIn, posIn, -1, overlay, true, matrix4f, vertexConsumer, quads, bitset);
             renderedSomething = true;
         }
 
@@ -144,19 +145,17 @@ public class BlockModelRendererSchematic
                Block.shouldDrawSide(stateIn, worldIn, posIn, side ,posIn.offset(side));
     }
 
-    protected void renderQuadsSmooth(BlockRenderView world, BlockState state, BlockPos pos, MatrixStack matrices,
+    protected void renderQuadsSmooth(BlockRenderView world, BlockState state, BlockPos pos, Matrix4f matrix4f,
                                      VertexConsumer vertexConsumer, List<BakedQuad> list, float[] box, BitSet flags, AmbientOcclusionCalculator ambientOcclusionCalculator, int overlay)
     {
         final int size = list.size();
 
-        for (int i = 0; i < size; ++i)
+        for (BakedQuad bakedQuad : list)
         {
-            BakedQuad bakedQuad = list.get(i);
-
             this.getQuadDimensions(world, state, pos, bakedQuad.getVertexData(), bakedQuad.getFace(), box, flags);
             ambientOcclusionCalculator.apply(world, state, pos, bakedQuad.getFace(), box, flags, bakedQuad.hasShade());
 
-            this.renderQuad(world, state, pos, vertexConsumer, matrices.peek(), bakedQuad,
+            this.renderQuad(world, state, pos, vertexConsumer, matrix4f, bakedQuad,
                     ambientOcclusionCalculator.brightness[0],
                     ambientOcclusionCalculator.brightness[1],
                     ambientOcclusionCalculator.brightness[2],
@@ -169,14 +168,12 @@ public class BlockModelRendererSchematic
     }
 
     protected void renderQuadsFlat(BlockRenderView world, BlockState state, BlockPos pos,
-                                   int light, int overlay, boolean useWorldLight, MatrixStack matrices, VertexConsumer vertexConsumer, List<BakedQuad> list, BitSet flags)
+                                   int light, int overlay, boolean useWorldLight, Matrix4f matrix4f, VertexConsumer vertexConsumer, List<BakedQuad> list, BitSet flags)
     {
         final int size = list.size();
 
-        for (int i = 0; i < size; ++i)
+        for (BakedQuad bakedQuad : list)
         {
-            BakedQuad bakedQuad = list.get(i);
-
             if (useWorldLight)
             {
                 this.getQuadDimensions(world, state, pos, bakedQuad.getVertexData(), bakedQuad.getFace(), null, flags);
@@ -184,11 +181,11 @@ public class BlockModelRendererSchematic
                 light = WorldRenderer.getLightmapCoordinates(world, state, blockPos);
             }
 
-            this.renderQuad(world, state, pos, vertexConsumer, matrices.peek(), bakedQuad, 1.0F, 1.0F, 1.0F, 1.0F, light, light, light, light, overlay);
+            this.renderQuad(world, state, pos, vertexConsumer, matrix4f, bakedQuad, 1.0F, 1.0F, 1.0F, 1.0F, light, light, light, light, overlay);
         }
     }
 
-    protected void renderQuad(BlockRenderView world, BlockState state, BlockPos pos, VertexConsumer vertexConsumer, MatrixStack.Entry matrixEntry,
+    protected void renderQuad(BlockRenderView world, BlockState state, BlockPos pos, VertexConsumer vertexConsumer, Matrix4f matrix4f,
                               BakedQuad quad, float brightness0, float brightness1, float brightness2, float brightness3,
                               int light0, int light1, int light2, int light3, int overlay)
     {
@@ -209,9 +206,16 @@ public class BlockModelRendererSchematic
             g = 1.0F;
             b = 1.0F;
         }
+        // TODO -- Make sure this works --> the VertexCustomer.quad() call uses MartrixStack.Entry,
+        //  maybe Matrix4f directly in the future?
+        MatrixStack matrixStack = new MatrixStack();
+        matrixStack.multiplyPositionMatrix(matrix4f);
 
-        vertexConsumer.quad(matrixEntry, quad, new float[]{ brightness0, brightness1, brightness2, brightness3 },
-                            r, g, b, new int[]{ light0, light1, light2, light3 }, overlay, true);
+        // New Opacity value.  Let's use 100% (1.0f) for now.
+        float opacity = 1.0f;
+
+        vertexConsumer.quad(matrixStack.peek(), quad, new float[]{ brightness0, brightness1, brightness2, brightness3 },
+                            r, g, b, opacity, new int[]{ light0, light1, light2, light3 }, overlay, true);
     }
 
     protected void getQuadDimensions(BlockRenderView world, BlockState state, BlockPos pos, int[] vertexData, Direction face, @Nullable float[] box, BitSet flags)
@@ -354,7 +358,7 @@ public class BlockModelRendererSchematic
     }
     */
 
-    class AmbientOcclusionCalculator
+    protected static class AmbientOcclusionCalculator
     {
         private final float[] brightness = new float[4];
         private final int[] light = new int[4];
@@ -547,7 +551,7 @@ public class BlockModelRendererSchematic
         }
     }
 
-    public static enum EnumNeighborInfo
+    public enum EnumNeighborInfo
     {
         DOWN(new Direction[]{Direction.WEST, Direction.EAST, Direction.NORTH, Direction.SOUTH}, 0.5F, true, new Orientation[]{Orientation.FLIP_WEST, Orientation.SOUTH, Orientation.FLIP_WEST, Orientation.FLIP_SOUTH, Orientation.WEST, Orientation.FLIP_SOUTH, Orientation.WEST, Orientation.SOUTH}, new Orientation[]{Orientation.FLIP_WEST, Orientation.NORTH, Orientation.FLIP_WEST, Orientation.FLIP_NORTH, Orientation.WEST, Orientation.FLIP_NORTH, Orientation.WEST, Orientation.NORTH}, new Orientation[]{Orientation.FLIP_EAST, Orientation.NORTH, Orientation.FLIP_EAST, Orientation.FLIP_NORTH, Orientation.EAST, Orientation.FLIP_NORTH, Orientation.EAST, Orientation.NORTH}, new Orientation[]{Orientation.FLIP_EAST, Orientation.SOUTH, Orientation.FLIP_EAST, Orientation.FLIP_SOUTH, Orientation.EAST, Orientation.FLIP_SOUTH, Orientation.EAST, Orientation.SOUTH}),
         UP(new Direction[]{Direction.EAST, Direction.WEST, Direction.NORTH, Direction.SOUTH}, 1.0F, true, new Orientation[]{Orientation.EAST, Orientation.SOUTH, Orientation.EAST, Orientation.FLIP_SOUTH, Orientation.FLIP_EAST, Orientation.FLIP_SOUTH, Orientation.FLIP_EAST, Orientation.SOUTH}, new Orientation[]{Orientation.EAST, Orientation.NORTH, Orientation.EAST, Orientation.FLIP_NORTH, Orientation.FLIP_EAST, Orientation.FLIP_NORTH, Orientation.FLIP_EAST, Orientation.NORTH}, new Orientation[]{Orientation.WEST, Orientation.NORTH, Orientation.WEST, Orientation.FLIP_NORTH, Orientation.FLIP_WEST, Orientation.FLIP_NORTH, Orientation.FLIP_WEST, Orientation.NORTH}, new Orientation[]{Orientation.WEST, Orientation.SOUTH, Orientation.WEST, Orientation.FLIP_SOUTH, Orientation.FLIP_WEST, Orientation.FLIP_SOUTH, Orientation.FLIP_WEST, Orientation.SOUTH}),
@@ -565,7 +569,7 @@ public class BlockModelRendererSchematic
         private final Orientation[] vert3Weights;
         private static final EnumNeighborInfo[] VALUES = new EnumNeighborInfo[6];
 
-        private EnumNeighborInfo(Direction[] p_i46236_3_, float p_i46236_4_, boolean p_i46236_5_, Orientation[] p_i46236_6_, Orientation[] p_i46236_7_, Orientation[] p_i46236_8_, Orientation[] p_i46236_9_)
+        EnumNeighborInfo(Direction[] p_i46236_3_, float p_i46236_4_, boolean p_i46236_5_, Orientation[] p_i46236_6_, Orientation[] p_i46236_7_, Orientation[] p_i46236_8_, Orientation[] p_i46236_9_)
         {
             //this.corners = p_i46236_3_;
             //this.shadeWeight = p_i46236_4_;
@@ -592,7 +596,7 @@ public class BlockModelRendererSchematic
         }
     }
 
-    public static enum Orientation
+    public enum Orientation
     {
         DOWN(Direction.DOWN, false),
         UP(Direction.UP, false),
@@ -609,13 +613,13 @@ public class BlockModelRendererSchematic
 
         private final int shape;
 
-        private Orientation(Direction p_i46233_3_, boolean p_i46233_4_)
+        Orientation(Direction p_i46233_3_, boolean p_i46233_4_)
         {
             this.shape = p_i46233_3_.getId() + (p_i46233_4_ ? Direction.values().length : 0);
         }
     }
 
-    static enum VertexTranslations
+    enum VertexTranslations
     {
         DOWN(0, 1, 2, 3),
         UP(2, 3, 0, 1),
@@ -630,7 +634,7 @@ public class BlockModelRendererSchematic
         private final int vert3;
         private static final VertexTranslations[] VALUES = new VertexTranslations[6];
 
-        private VertexTranslations(int p_i46234_3_, int p_i46234_4_, int p_i46234_5_, int p_i46234_6_)
+        VertexTranslations(int p_i46234_3_, int p_i46234_4_, int p_i46234_5_, int p_i46234_6_)
         {
             this.vert0 = p_i46234_3_;
             this.vert1 = p_i46234_4_;

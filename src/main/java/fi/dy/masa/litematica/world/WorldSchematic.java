@@ -2,9 +2,15 @@ package fi.dy.masa.litematica.world;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Objects;
+import java.util.UUID;
+import java.util.function.Consumer;
 import java.util.function.Predicate;
 import java.util.function.Supplier;
 import com.google.common.collect.ImmutableList;
+import net.minecraft.class_9492;
+import net.minecraft.class_9513;
+import net.minecraft.component.type.MapIdComponent;
 import org.jetbrains.annotations.Nullable;
 
 import net.minecraft.block.Block;
@@ -67,7 +73,10 @@ public class WorldSchematic extends World
                           Supplier<Profiler> supplier,
                           @Nullable WorldRendererSchematic worldRenderer)
     {
-        super(properties, REGISTRY_KEY, MinecraftClient.getInstance().getNetworkHandler().getRegistryManager(), dimension, supplier, true, false, 0L, 0);
+        super(properties, REGISTRY_KEY,
+                Objects.requireNonNull(MinecraftClient.getInstance().world != null ?
+                        MinecraftClient.getInstance().world.getRegistryManager() : DynamicRegistryManager.EMPTY),
+                dimension, supplier, true, false, 0L, 0);
 
         this.mc = MinecraftClient.getInstance();
         this.worldRenderer = worldRenderer;
@@ -92,6 +101,16 @@ public class WorldSchematic extends World
     {
         return this.tickManager;
     }
+
+    @Nullable
+    @Override
+    public MapState getMapState(MapIdComponent id) { return null; }
+
+    @Override
+    public void putMapState(MapIdComponent id, MapState state) { }
+
+    @Override
+    public MapIdComponent getNextMapId() { return null; }
 
     @Override
     public QueryableTickScheduler<Block> getBlockTickScheduler()
@@ -193,25 +212,6 @@ public class WorldSchematic extends World
     }
 
     @Override
-    @Nullable
-    public MapState getMapState(String id)
-    {
-        return null;
-    }
-
-    @Override
-    public void putMapState(String name, MapState mapState)
-    {
-        // NO-OP
-    }
-
-    @Override
-    public int getNextMapId()
-    {
-        return 0;
-    }
-
-    @Override
     public Scoreboard getScoreboard()
     {
         return this.mc.world != null ? this.mc.world.getScoreboard() : null;
@@ -227,6 +227,12 @@ public class WorldSchematic extends World
     protected EntityLookup<Entity> getEntityLookup()
     {
         // This is not used in the mod
+        return null;
+    }
+
+    @Override
+    public Iterable<? extends class_9513> method_58786()
+    {
         return null;
     }
 
@@ -415,10 +421,11 @@ public class WorldSchematic extends World
     @Override
     public void syncWorldEvent(@Nullable PlayerEntity entity, int id, BlockPos pos, int data)
     {
+        // NO-OP
     }
 
     @Override
-    public void emitGameEvent(GameEvent event, Vec3d pos, @Nullable GameEvent.Emitter emitter)
+    public void emitGameEvent(RegistryEntry<GameEvent> event, Vec3d emitterPos, GameEvent.Emitter emitter)
     {
         // NO-OP
     }
@@ -431,12 +438,6 @@ public class WorldSchematic extends World
 
     @Override
     public void playSoundFromEntity(@javax.annotation.Nullable PlayerEntity except, Entity entity, RegistryEntry<SoundEvent> sound, SoundCategory category, float volume, float pitch, long seed)
-    {
-        // NO-OP
-    }
-
-    @Override
-    public void emitGameEvent(@Nullable Entity entity, GameEvent event, BlockPos pos)
     {
         // NO-OP
     }
@@ -463,6 +464,26 @@ public class WorldSchematic extends World
     public void addImportantParticle(ParticleEffect particleParameters_1, boolean boolean_1, double double_1, double double_2, double double_3,     double double_4, double double_5, double double_6)
     {
         // NO-OP
+    }
+
+    @Override
+    public void method_58788(int i, double d, double e, double f, SoundEvent soundEvent, SoundCategory soundCategory, float g, float h)
+    {
+        // NO-OP
+    }
+
+    @Override
+    public void method_58787(double d, double e, double f, Consumer<class_9492> consumer)
+    {
+        // NO-OP
+    }
+
+    @Nullable
+    @Override
+    public class_9513 method_58791(UUID uUID)
+    {
+        // NO-OP
+        return null;
     }
 
     @Override
@@ -511,5 +532,23 @@ public class WorldSchematic extends World
     public String asString()
     {
         return "Chunks[SCH] W: " + this.getChunkManager().getDebugString() + " E: " + this.getRegularEntityCount();
+    }
+
+    @Override
+    public void emitGameEvent(@Nullable Entity entity, RegistryEntry<GameEvent> event, Vec3d pos)
+    {
+        // NO-OP
+    }
+
+    @Override
+    public void emitGameEvent(@Nullable Entity entity, RegistryEntry<GameEvent> event, BlockPos pos)
+    {
+        // NO-OP
+    }
+
+    @Override
+    public void emitGameEvent(RegistryKey<GameEvent> event, BlockPos pos, @Nullable GameEvent.Emitter emitter)
+    {
+        // NO-OP
     }
 }

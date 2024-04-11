@@ -320,6 +320,13 @@ public class SchematicConverter
         }
 
         @Override
+        public boolean method_58798()
+        {
+            // Mostly false, whatever this is.
+            return false;
+        }
+
+        @Override
         @Nullable
         public BlockEntity getBlockEntity(BlockPos pos)
         {

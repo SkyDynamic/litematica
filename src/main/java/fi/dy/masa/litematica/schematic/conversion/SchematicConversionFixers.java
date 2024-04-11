@@ -57,7 +57,7 @@ public class SchematicConversionFixers
     public static final IStateFixer FIXER_BANNER = (reader, state, pos) -> {
         NbtCompound tag = reader.getBlockEntityData(pos);
 
-        if (tag != null)
+        if (tag != null && tag.contains("Base"))
         {
             DyeColor colorOrig = ((AbstractBannerBlock) state.getBlock()).getColor();
             DyeColor colorFromData = DyeColor.byId(15 - tag.getInt("Base"));
@@ -96,7 +96,7 @@ public class SchematicConversionFixers
     public static final IStateFixer FIXER_BANNER_WALL = (reader, state, pos) -> {
         NbtCompound tag = reader.getBlockEntityData(pos);
 
-        if (tag != null)
+        if (tag != null && tag.contains("Base"))
         {
             DyeColor colorOrig = ((AbstractBannerBlock) state.getBlock()).getColor();
             DyeColor colorFromData = DyeColor.byId(15 - tag.getInt("Base"));
@@ -239,13 +239,13 @@ public class SchematicConversionFixers
 
         if (facing.getAxis() == Direction.Axis.X)
         {
-            inWall = (((IMixinFenceGateBlock) gate).invokeIsWall(reader.getBlockState(pos.offset(Direction.NORTH)))
-                   || ((IMixinFenceGateBlock) gate).invokeIsWall(reader.getBlockState(pos.offset(Direction.SOUTH))));
+            inWall = (((IMixinFenceGateBlock) gate).litematica$invokeIsWall(reader.getBlockState(pos.offset(Direction.NORTH)))
+                   || ((IMixinFenceGateBlock) gate).litematica$invokeIsWall(reader.getBlockState(pos.offset(Direction.SOUTH))));
         }
         else
         {
-            inWall = (((IMixinFenceGateBlock) gate).invokeIsWall(reader.getBlockState(pos.offset(Direction.WEST)))
-                   || ((IMixinFenceGateBlock) gate).invokeIsWall(reader.getBlockState(pos.offset(Direction.EAST))));
+            inWall = (((IMixinFenceGateBlock) gate).litematica$invokeIsWall(reader.getBlockState(pos.offset(Direction.WEST)))
+                   || ((IMixinFenceGateBlock) gate).litematica$invokeIsWall(reader.getBlockState(pos.offset(Direction.EAST))));
         }
 
         return state.with(FenceGateBlock.IN_WALL, inWall);
@@ -258,11 +258,11 @@ public class SchematicConversionFixers
     public static final IStateFixer FIXER_FLOWER_POT = (reader, state, pos) -> {
         NbtCompound tag = reader.getBlockEntityData(pos);
 
-        if (tag != null)
+        if (tag != null && tag.contains("Item", 8))
         {
             String itemName = tag.getString("Item");
 
-            if (itemName.length() > 0)
+            if (itemName.length() > 0 && tag.contains("Data"))
             {
                 int meta = tag.getInt("Data");
 
@@ -339,7 +339,7 @@ public class SchematicConversionFixers
 
     public static final IStateFixer FIXER_REDSTONE_WIRE = (reader, state, pos) -> {
         RedstoneWireBlock wire = (RedstoneWireBlock) state.getBlock();
-        state = ((IMixinRedstoneWireBlock) wire).litematicaGetPlacementState(reader, state, pos);
+        state = ((IMixinRedstoneWireBlock) wire).litematica$GetPlacementState(reader, state, pos);
 
         // Turn all old dots into crosses, while keeping the power level
         if (state.with(RedstoneWireBlock.POWER, 0) == REDSTONE_WIRE_DOT)
@@ -382,7 +382,7 @@ public class SchematicConversionFixers
     public static final IStateFixer FIXER_SKULL = (reader, state, pos) -> {
         NbtCompound tag = reader.getBlockEntityData(pos);
 
-        if (tag != null)
+        if (tag != null && tag.contains("SkullType"))
         {
             int id = MathHelper.clamp(tag.getByte("SkullType"), 0, 5);
 
@@ -429,7 +429,7 @@ public class SchematicConversionFixers
     public static final IStateFixer FIXER_SKULL_WALL = (reader, state, pos) -> {
         NbtCompound tag = reader.getBlockEntityData(pos);
 
-        if (tag != null)
+        if (tag != null && tag.contains("SkullType"))
         {
             int id = MathHelper.clamp(tag.getByte("SkullType"), 0, 5);
 
@@ -476,7 +476,7 @@ public class SchematicConversionFixers
     };
 
     public static final IStateFixer FIXER_STAIRS = (reader, state, pos) -> {
-        return state.with(StairsBlock.SHAPE, IMixinStairsBlock.invokeGetStairShape(state, reader, pos));
+        return state.with(StairsBlock.SHAPE, IMixinStairsBlock.litematica$invokeGetStairShape(state, reader, pos));
     };
 
     public static final IStateFixer FIXER_STEM = (reader, state, pos) -> {
@@ -512,7 +512,7 @@ public class SchematicConversionFixers
 
     public static final IStateFixer FIXER_VINE = (reader, state, pos) -> {
         VineBlock vine = (VineBlock) state.getBlock();
-        return state.with(VineBlock.UP, ((IMixinVineBlock) vine).invokeShouldConnectUp(reader, pos.up(), Direction.UP));
+        return state.with(VineBlock.UP, ((IMixinVineBlock) vine).litematica$invokeShouldConnectUp(reader, pos.up(), Direction.UP));
     };
 
     private static boolean getIsRepeaterPoweredOnSide(BlockView reader, BlockPos pos, BlockState stateRepeater)

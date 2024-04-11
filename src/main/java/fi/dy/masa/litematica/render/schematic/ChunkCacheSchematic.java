@@ -132,6 +132,12 @@ public class ChunkCacheSchematic implements BlockRenderView, ChunkProvider
     }
 
     @Override
+    public boolean method_58798()
+    {
+        return false;
+    }
+
+    @Override
     public LightingProvider getLightingProvider()
     {
         return this.lightingProvider;

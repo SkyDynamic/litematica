@@ -2,12 +2,15 @@ package fi.dy.masa.litematica.util;
 
 import java.util.ArrayList;
 import java.util.List;
+import fi.dy.masa.litematica.Litematica;
 import net.minecraft.block.entity.BlockEntity;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.entity.player.PlayerInventory;
+import net.minecraft.item.Item;
 import net.minecraft.item.ItemStack;
 import net.minecraft.item.ToolItem;
+import net.minecraft.registry.DynamicRegistryManager;
 import net.minecraft.screen.PlayerScreenHandler;
 import net.minecraft.screen.ScreenHandler;
 import net.minecraft.screen.slot.Slot;
@@ -46,13 +49,13 @@ public class InventoryUtils
         }
     }
 
-    public static void setPickedItemToHand(ItemStack stack, MinecraftClient mc)
+    public static void setPickedItemToHand(ItemStack stack, MinecraftClient mc, DynamicRegistryManager registryManager)
     {
         int slotNum = mc.player.getInventory().getSlotWithStack(stack);
-        setPickedItemToHand(slotNum, stack, mc);
+        setPickedItemToHand(slotNum, stack, mc, registryManager);
     }
 
-    public static void setPickedItemToHand(int sourceSlot, ItemStack stack, MinecraftClient mc)
+    public static void setPickedItemToHand(int sourceSlot, ItemStack stack, MinecraftClient mc, DynamicRegistryManager registryManager)
     {
         PlayerEntity player = mc.player;
         PlayerInventory inventory = player.getInventory();
@@ -85,6 +88,11 @@ public class InventoryUtils
             {
                 inventory.selectedSlot = hotbarSlot;
 
+                int count = stack.getCount();
+                Item item = stack.getItem();
+
+                Litematica.debugLog("setPickedItemToHand(): item: {}, count {}", item.toString(), count);
+
                 if (EntityUtils.isCreativeMode(player))
                 {
                     inventory.main.set(hotbarSlot, stack.copy());
@@ -111,6 +119,8 @@ public class InventoryUtils
             PlayerInventory inv = mc.player.getInventory();
             stack = stack.copy();
 
+            Litematica.debugLog("schematicWorldPickBlock(): item: {} pos: {}", stack.getItem().toString(), pos.toShortString());
+
             if (EntityUtils.isCreativeMode(mc.player))
             {
                 BlockEntity te = schematicWorld.getBlockEntity(pos);
@@ -120,10 +130,10 @@ public class InventoryUtils
                 // Otherwise it would try to write whatever that TE is into the picked ItemStack.
                 if (GuiBase.isCtrlDown() && te != null && mc.world.isAir(pos))
                 {
-                    ItemUtils.storeTEInStack(stack, te);
+                    ItemUtils.storeTEInStack(stack, te, schematicWorld.getRegistryManager());
                 }
 
-                setPickedItemToHand(stack, mc);
+                setPickedItemToHand(stack, mc, schematicWorld.getRegistryManager());
                 mc.interactionManager.clickCreativeStack(mc.player.getStackInHand(Hand.MAIN_HAND), 36 + inv.selectedSlot);
 
                 //return true;
@@ -135,7 +145,7 @@ public class InventoryUtils
 
                 if (shouldPick && slot != -1)
                 {
-                    setPickedItemToHand(stack, mc);
+                    setPickedItemToHand(stack, mc, schematicWorld.getRegistryManager());
                 }
                 else if (slot == -1 && Configs.Generic.PICK_BLOCK_SHULKERS.getBooleanValue())
                 {
@@ -144,7 +154,7 @@ public class InventoryUtils
                     if (slot != -1)
                     {
                         ItemStack boxStack = mc.player.playerScreenHandler.slots.get(slot).getStack();
-                        setPickedItemToHand(boxStack, mc);
+                        setPickedItemToHand(boxStack, mc, schematicWorld.getRegistryManager());
                     }
                 }
 
@@ -168,7 +178,7 @@ public class InventoryUtils
         }
 
         return (Configs.Generic.PICK_BLOCK_AVOID_DAMAGEABLE.getBooleanValue() == false ||
-                stack.getItem().isDamageable() == false) &&
+                stack.isDamageable() == false) &&
                (Configs.Generic.PICK_BLOCK_AVOID_TOOLS.getBooleanValue() == false ||
                 (stack.getItem() instanceof ToolItem) == false);
     }
@@ -238,7 +248,7 @@ public class InventoryUtils
         {
             for (ItemStack item : items)
             {
-                if (fi.dy.masa.malilib.util.InventoryUtils.areStacksEqual(item, referenceItem))
+                if (fi.dy.masa.malilib.util.InventoryUtils.areStacksEqualIgnoreNbt(item, referenceItem))
                 {
                     return true;
                 }

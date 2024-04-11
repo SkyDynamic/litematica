@@ -4,26 +4,18 @@ import java.io.File;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Map;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
 import javax.annotation.Nullable;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonPrimitive;
-import com.mojang.brigadier.StringReader;
-import net.minecraft.item.Item;
+import fi.dy.masa.malilib.util.*;
 import net.minecraft.item.ItemStack;
 import net.minecraft.item.Items;
-import net.minecraft.nbt.NbtCompound;
-import net.minecraft.nbt.StringNbtReader;
+import net.minecraft.registry.DynamicRegistryManager;
 import net.minecraft.registry.Registries;
+import net.minecraft.resource.featuretoggle.FeatureSet;
 import net.minecraft.text.Text;
-import net.minecraft.util.Identifier;
 import fi.dy.masa.malilib.gui.interfaces.IDirectoryCache;
-import fi.dy.masa.malilib.util.FileUtils;
-import fi.dy.masa.malilib.util.JsonUtils;
-import fi.dy.masa.malilib.util.LayerRange;
-import fi.dy.masa.malilib.util.StringUtils;
 import fi.dy.masa.litematica.Litematica;
 import fi.dy.masa.litematica.Reference;
 import fi.dy.masa.litematica.config.Configs;
@@ -41,23 +33,24 @@ import fi.dy.masa.litematica.tool.ToolMode;
 import fi.dy.masa.litematica.tool.ToolModeData;
 import fi.dy.masa.litematica.util.SchematicWorldRefresher;
 import fi.dy.masa.litematica.util.ToBooleanFunction;
+import net.minecraft.util.Identifier;
 
 public class DataManager implements IDirectoryCache
 {
     private static final DataManager INSTANCE = new DataManager();
-
-    private static final Pattern PATTERN_ITEM_NBT = Pattern.compile("^(?<name>[a-z0-9\\._-]+:[a-z0-9\\._-]+)(?<nbt>\\{.*\\})$");
-    private static final Pattern PATTERN_ITEM_BASE = Pattern.compile("^(?<name>(?:[a-z0-9\\._-]+:)[a-z0-9\\._-]+)$");
+    //private static final Pattern PATTERN_ITEM_NBT = Pattern.compile("^(?<name>[a-z0-9\\._-]+:[a-z0-9\\._-]+)(?<nbt>\\{.*\\})$");
+    //private static final Pattern PATTERN_ITEM_BASE = Pattern.compile("^(?<name>(?:[a-z0-9\\._-]+:)[a-z0-9\\._-]+)$");
     private static final Map<String, File> LAST_DIRECTORIES = new HashMap<>();
     private static final ArrayList<ToBooleanFunction<Text>> CHAT_LISTENERS = new ArrayList<>();
-
     private static ItemStack toolItem = new ItemStack(Items.STICK);
     private static ConfigGuiTab configGuiTab = ConfigGuiTab.GENERIC;
     private static boolean createPlacementOnLoad = true;
     private static boolean canSave;
     private static boolean isCarpetServer;
     private static long clientTickStart;
-
+    public static Identifier CARPET_HELLO = Identifier.of("carpet", "hello");
+    private DynamicRegistryManager registryManager = DynamicRegistryManager.EMPTY;
+    private FeatureSet enabledFeatures = FeatureSet.empty();
     private final SelectionManager selectionManager = new SelectionManager();
     private final SchematicPlacementManager schematicPlacementManager = new SchematicPlacementManager();
     private final SchematicProjectsManager schematicProjectsManager = new SchematicProjectsManager();
@@ -71,7 +64,7 @@ public class DataManager implements IDirectoryCache
     {
     }
 
-    private static DataManager getInstance()
+    public static DataManager getInstance()
     {
         return INSTANCE;
     }
@@ -277,7 +270,7 @@ public class DataManager implements IDirectoryCache
                 {
                     configGuiTab = ConfigGuiTab.valueOf(root.get("config_gui_tab").getAsString());
                 }
-                catch (Exception e) {}
+                catch (Exception ignored) {}
 
                 if (configGuiTab == null)
                 {
@@ -339,6 +332,46 @@ public class DataManager implements IDirectoryCache
         setIsCarpetServer(false);
     }
 
+    /**
+     * Store's the world registry manager for Dynamic Lookup
+     * Set this at WorldLoadPost
+     * @param manager
+     */
+    public void setWorldRegistryManager(DynamicRegistryManager manager)
+    {
+        if (manager != null && manager != DynamicRegistryManager.EMPTY)
+            this.registryManager = manager;
+        else
+            this.registryManager = DynamicRegistryManager.EMPTY;
+    }
+
+    public DynamicRegistryManager getWorldRegistryManager()
+    {
+        if (this.registryManager != DynamicRegistryManager.EMPTY)
+            return this.registryManager;
+        else
+            return DynamicRegistryManager.EMPTY;
+    }
+
+    /**
+     * Store's the Client FeatureSet
+     */
+    public void setClientFeatureSet(FeatureSet features)
+    {
+        if (features != null && features != FeatureSet.empty())
+            this.enabledFeatures = features;
+        else
+            this.enabledFeatures = FeatureSet.empty();
+    }
+
+    public FeatureSet getClientFeatureSet()
+    {
+        if (this.enabledFeatures != FeatureSet.empty())
+            return this.enabledFeatures;
+        else
+            return FeatureSet.empty();
+    }
+
     private void savePerDimensionData()
     {
         this.schematicProjectsManager.saveCurrentProject();
@@ -393,7 +426,7 @@ public class DataManager implements IDirectoryCache
             {
                 this.operationMode = ToolMode.valueOf(obj.get("operation_mode").getAsString());
             }
-            catch (Exception e) {}
+            catch (Exception ignored) {}
 
             if (this.operationMode == null)
             {
@@ -511,48 +544,51 @@ public class DataManager implements IDirectoryCache
 
     public static void setToolItem(String itemNameIn)
     {
-        if (itemNameIn.isEmpty() || itemNameIn.equals("empty"))
+        /*
+        if (itemNameIn.isEmpty() || itemNameIn.equals("empty") || itemNameIn.equals("minecraft:air"))
         {
             toolItem = ItemStack.EMPTY;
             return;
         }
-
-        try
+        else
         {
-            Matcher matcherNbt = PATTERN_ITEM_NBT.matcher(itemNameIn);
             Matcher matcherBase = PATTERN_ITEM_BASE.matcher(itemNameIn);
 
-            String itemName = null;
+            String itemName;
+            /*
+            Matcher matcherNbt = PATTERN_ITEM_NBT.matcher(itemNameIn);
             NbtCompound nbt = null;
 
             if (matcherNbt.matches())
             {
                 itemName = matcherNbt.group("name");
-                nbt = (new StringNbtReader(new StringReader(matcherNbt.group("nbt")))).parseCompound();
+                nbt = (new StringNbtReader(new StringReader(matcherNbt.group("nbt")))).parseElement();
             }
-            else if (matcherBase.matches())
+            else
+            if (matcherBase.matches())
             {
                 itemName = matcherBase.group("name");
-            }
 
-            if (itemName != null)
-            {
-                Item item = Registries.ITEM.get(new Identifier(itemName));
-
-                if (item != null && item != Items.AIR)
+                if (itemName != null)
                 {
-                    toolItem = new ItemStack(item);
-                    toolItem.setNbt(nbt);
-                    return;
+                    Item item = Registries.ITEM.get(new Identifier(itemName));
+
+                    if (item != null && item != Items.AIR)
+                    {
+                        toolItem = new ItemStack(item);
+                        //toolItem.setNbt(nbt);
+                        return;
+                    }
                 }
             }
         }
-        catch (Exception ignore)
+            */
+        toolItem = InventoryUtils.getItemStackFromString(itemNameIn);
+        if (toolItem.isEmpty())
         {
+            // Fall back to a stick
+            toolItem = new ItemStack(Items.STICK);
+            Configs.Generic.TOOL_ITEM.setValueFromString(Registries.ITEM.getId(Items.STICK).toString());
         }
-
-        // Fall back to a stick
-        toolItem = new ItemStack(Items.STICK);
-        Configs.Generic.TOOL_ITEM.setValueFromString(Registries.ITEM.getId(Items.STICK).toString());
     }
 }

@@ -49,6 +49,7 @@ import fi.dy.masa.malilib.util.Color4f;
 import fi.dy.masa.malilib.util.EntityUtils;
 import fi.dy.masa.malilib.util.IntBoundingBox;
 import fi.dy.masa.malilib.util.LayerRange;
+import org.joml.Matrix4f;
 
 public class ChunkRendererSchematicVbo
 {
@@ -271,7 +272,10 @@ public class ChunkRendererSchematicVbo
                 float z = (float) cameraPos.z - this.position.getZ();
                 Set<RenderLayer> usedLayers = new HashSet<>();
                 BufferBuilderCache buffers = task.getBufferCache();
-                MatrixStack matrices = new MatrixStack();
+
+                // TODO -- Do we need to change this to a Matrix4f in the future?
+                //  You can try but doing so will break things in practical testing?
+                MatrixStack matrixStack = new MatrixStack();
                 int bottomY = this.position.getY();
 
                 for (IntBoundingBox box : this.boxes)
@@ -292,12 +296,17 @@ public class ChunkRendererSchematicVbo
                         // Fluid models and the overlay use the VertexConsumer#vertex(x, y, z) method.
                         // Fluid rendering and the overlay do not use the MatrixStack.
                         // Block models use the VertexConsumer#quad() method, and they use the MatrixStack.
-                        matrices.push();
-                        matrices.translate(posMutable.getX() & 0xF, posMutable.getY() - bottomY, posMutable.getZ() & 0xF);
+                        // == Mind blown.
 
-                        this.renderBlocksAndOverlay(posMutable, data, tileEntities, usedLayers, matrices, buffers);
+                        //matrix4fStack.pushMatrix();
+                        matrixStack.push();
 
-                        matrices.pop();
+                        matrixStack.translate(posMutable.getX() & 0xF, posMutable.getY() - bottomY, posMutable.getZ() & 0xF);
+
+                        this.renderBlocksAndOverlay(posMutable, data, tileEntities, usedLayers, matrixStack.peek().getPositionMatrix(), buffers);
+
+                        matrixStack.pop();
+                        //matrix4fStack.popMatrix();
                     }
                 }
 
@@ -351,7 +360,7 @@ public class ChunkRendererSchematicVbo
     }
 
     protected void renderBlocksAndOverlay(BlockPos pos, ChunkRenderDataSchematic data, Set<BlockEntity> tileEntities,
-            Set<RenderLayer> usedLayers, MatrixStack matrices, BufferBuilderCache buffers)
+                                          Set<RenderLayer> usedLayers, Matrix4f matrix4f, BufferBuilderCache buffers)
     {
         BlockState stateSchematic = this.schematicWorldView.getBlockState(pos);
         BlockState stateClient    = this.clientWorldView.getBlockState(pos);
@@ -407,7 +416,7 @@ public class ChunkRendererSchematicVbo
                     this.preRenderBlocks(bufferSchematic, layer);
                 }
 
-                if (this.worldRenderer.renderBlock(this.schematicWorldView, stateSchematic, pos, matrices, bufferSchematic))
+                if (this.worldRenderer.renderBlock(this.schematicWorldView, stateSchematic, pos, matrix4f, bufferSchematic))
                 {
                     usedLayers.add(layer);
                 }
@@ -466,7 +475,7 @@ public class ChunkRendererSchematicVbo
                         BakedModel bakedModel = this.worldRenderer.getModelForState(stateSchematic);
 
                         if (type.getRenderPriority() > typeAdj.getRenderPriority() ||
-                            Block.isFaceFullSquare(stateSchematic.getCollisionShape(this.schematicWorldView, pos), side) == false)
+                                Block.isFaceFullSquare(stateSchematic.getCollisionShape(this.schematicWorldView, pos), side) == false)
                         {
                             RenderUtils.drawBlockModelQuadOverlayBatched(bakedModel, stateSchematic, relPos, side, this.overlayColor, 0, bufferOverlayQuads);
                         }
@@ -663,6 +672,7 @@ public class ChunkRendererSchematicVbo
             boolean clientHasAir = stateClient.isAir();
             boolean schematicHasAir = stateSchematic.isAir();
 
+            // TODO Maybe someday Mojang will add something to replace isLiquid(), isSolid(), etc ?
             if (schematicHasAir)
             {
                 return (clientHasAir || (this.ignoreClientWorldFluids && stateClient.isLiquid())) ? OverlayType.NONE : OverlayType.EXTRA;

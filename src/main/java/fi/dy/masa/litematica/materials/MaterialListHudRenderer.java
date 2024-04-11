@@ -271,13 +271,13 @@ public class MaterialListHudRenderer implements IInfoHudRenderer
         List<Slot> slots = gui.getScreenHandler().slots;
 
         RenderUtils.setupBlend();
-        int guiX = ((IMixinHandledScreen) gui).litematica_getX();
-        int guiY = ((IMixinHandledScreen) gui).litematica_getY();
+        int guiX = ((IMixinHandledScreen) gui).litematica$getX();
+        int guiY = ((IMixinHandledScreen) gui).litematica$getY();
 
         for (Slot slot : slots)
         {
             if (slot.hasStack() &&
-                (fi.dy.masa.malilib.util.InventoryUtils.areStacksEqual(slot.getStack(), referenceItem) ||
+                (fi.dy.masa.malilib.util.InventoryUtils.areStacksEqualIgnoreNbt(slot.getStack(), referenceItem) ||
                  InventoryUtils.doesShulkerBoxContainItem(slot.getStack(), referenceItem)))
             {
                 renderOutlinedBox(guiX + slot.x, guiY + slot.y, 16, 16, color.intValue, color.intValue | 0xFF000000, 1f);

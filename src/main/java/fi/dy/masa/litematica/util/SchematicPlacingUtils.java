@@ -78,8 +78,8 @@ public class SchematicPlacingUtils
                     Map<BlockPos, OrderedTick<Fluid>> scheduledFluidTicks = schematic.getScheduledFluidTicksForRegion(regionName);
 
                     if (placeBlocksWithinChunk(world, chunkPos, regionName, container, blockEntityMap,
-                                               origin, schematicPlacement, placement, scheduledBlockTicks,
-                                               scheduledFluidTicks, replace, notifyNeighbors) == false)
+                        origin, schematicPlacement, placement, scheduledBlockTicks,
+                        scheduledFluidTicks, replace, notifyNeighbors) == false)
                     {
                         allSuccess = false;
                         Litematica.logger.warn("Invalid/missing schematic data in schematic '{}' for sub-region '{}'", schematic.getMetadata().getName(), regionName);
@@ -248,7 +248,7 @@ public class SchematicPlacingUtils
 
                             try
                             {
-                                te.readNbt(teNBT);
+                                te.readNbt(teNBT, world.getRegistryManager());
 
                                 if (ignoreInventories && te instanceof Inventory)
                                 {
